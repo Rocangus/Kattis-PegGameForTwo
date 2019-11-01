@@ -187,6 +187,7 @@ namespace Kattis_PegGameForTwo
                                 EvaluateMove(hole, midpoint, origin);
                             }
                             break;
+                        // Repeat for the rest of the options
                         default:
                             throw new Exception("The switch statement in CheckForBestMove did not find a match in any of its' statements.");
                     }
