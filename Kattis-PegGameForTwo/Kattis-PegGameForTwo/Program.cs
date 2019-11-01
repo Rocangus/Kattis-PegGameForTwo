@@ -168,19 +168,27 @@ namespace Kattis_PegGameForTwo
             {
                 if (direction is Directions dir)
                 {
+                    Position origin;
                     switch (dir)
                     {
                         case Directions.E:
-                            Position origin = new Position(hole.y, hole.x + 2);
+                            origin = new Position(hole.y, hole.x + 2);
                             if (ValidMove(hole, origin))
                             {
                                 Position midpoint = new Position(hole.y, hole.x + 1);
                                 EvaluateMove(hole, midpoint, origin);
                             }
                             break;
-                        default:
-                            Console.WriteLine("Not East.");
+                        case Directions.SE:
+                            origin = new Position(hole.y + 2, hole.x + 2);
+                            if (ValidMove(hole, origin))
+                            {
+                                Position midpoint = new Position(hole.y + 1, hole.x + 1);
+                                EvaluateMove(hole, midpoint, origin);
+                            }
                             break;
+                        default:
+                            throw new Exception("The switch statement in CheckForBestMove did not find a match in any of its' statements.");
                     }
                 }
             }
