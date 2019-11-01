@@ -6,7 +6,7 @@ namespace Kattis_PegGameForTwo
 {
     enum Directions { E, SE, SW, W, NW, NE }
 
-    class Player
+    public class Player
     {
         string name;
         internal int score;
@@ -18,7 +18,7 @@ namespace Kattis_PegGameForTwo
         }
     }
 
-    class Move
+    public class Move
     {
         int score;
         internal Position hole, midpoint, origin;
@@ -49,7 +49,7 @@ namespace Kattis_PegGameForTwo
         }
     }
 
-    class Position
+    public class Position
     {
         internal int y, x;
         public Position(int yN, int xN)
@@ -77,7 +77,7 @@ namespace Kattis_PegGameForTwo
             return false;
         }
     }
-    class Program
+    public class Program
     {
         static int[,] pegs;
         static Player jacquez = new Player("Jaquez"), alia = new Player("Alia");
@@ -95,24 +95,26 @@ namespace Kattis_PegGameForTwo
                 ProcessLineOfPointValues(y, stringNumbers);
             }
 
-            PrintPegsState();
 
             while(!gameOver)
             {
                 TakeTurn(jacquez);
+                PrintPegsState();
                 if (!gameOver)
                 {
                     TakeTurn(alia);
+                    PrintPegsState();
                 }
             }
             Console.WriteLine(jacquez.score - alia.score);
         }
 
-        private static void TakeTurn(Player player)
+        public static void TakeTurn(Player player)
         {
+            bestmove = null;
             foreach (var hole in holes)
             {
-                CheckForBestMove(hole, player);
+                CheckForBestMove(hole);
             }
             if (bestmove != null)
             {
@@ -124,7 +126,7 @@ namespace Kattis_PegGameForTwo
             }
         }
 
-        private static void ProcessLineOfPointValues(int y, string[] stringNumbers)
+        public static void ProcessLineOfPointValues(int y, string[] stringNumbers)
         {
             for (int x = 0; x < 5; x++)
             {
@@ -145,7 +147,7 @@ namespace Kattis_PegGameForTwo
         }
 
         //ToDo: Remove this debug output function
-        private static void PrintPegsState()
+        public static void PrintPegsState()
         {
             for (int y = 0; y < 5; y++)
             {
@@ -161,9 +163,8 @@ namespace Kattis_PegGameForTwo
                 Console.WriteLine(stringBuilder);
             }
         }
-        private static void CheckForBestMove(Position hole, Player player)
+        public static void CheckForBestMove(Position hole)
         {
-            Position original = Position.CopyPair(hole);
             foreach (var direction in Enum.GetValues(typeof(Directions)))
             {
                 if (direction is Directions dir)
@@ -173,19 +174,27 @@ namespace Kattis_PegGameForTwo
                     {
                         case Directions.E:
                             origin = new Position(hole.y, hole.x + 2);
-                            if (ValidMove(hole, origin))
-                            {
-                                Position midpoint = new Position(hole.y, hole.x + 1);
-                                EvaluateMove(hole, midpoint, origin);
-                            }
+                            EvaluateMove(hole, origin);
                             break;
                         case Directions.SE:
                             origin = new Position(hole.y + 2, hole.x + 2);
-                            if (ValidMove(hole, origin))
-                            {
-                                Position midpoint = new Position(hole.y + 1, hole.x + 1);
-                                EvaluateMove(hole, midpoint, origin);
-                            }
+                            EvaluateMove(hole, origin);
+                            break;
+                        case Directions.SW:
+                            origin = new Position(hole.y + 2, hole.x);
+                            EvaluateMove(hole, origin);
+                            break;
+                        case Directions.W:
+                            origin = new Position(hole.y, hole.x - 2);
+                            EvaluateMove(hole, origin);
+                            break;
+                        case Directions.NW:
+                            origin = new Position(hole.y - 2, hole.x - 2);
+                            EvaluateMove(hole, origin);
+                            break;
+                        case Directions.NE:
+                            origin = new Position(hole.y - 2, hole.x);
+                            EvaluateMove(hole, origin);
                             break;
                         // Repeat for the rest of the options
                         default:
@@ -196,12 +205,32 @@ namespace Kattis_PegGameForTwo
 
         }
 
-        private static void EvaluateMove(Position hole, Position midpoint, Position origin)
+        public static void EvaluateMove(Position hole, Position origin)
         {
-            
+            if (ValidMove(hole, origin))
+            {
+                Position midpoint = FindMidpoint(hole, origin);
+                EvaluateScore(hole, midpoint, origin);
+            }
         }
 
-        private static bool ValidMove(Position hole, Position origin)
+        public static void EvaluateScore(Position hole, Position midpoint, Position origin)
+        {
+            Move candidate = new Move(hole, midpoint, origin);
+            if (candidate.Score > 0 && (bestmove == null || candidate.Score > bestmove.Score))
+            {
+                bestmove = candidate;
+            }
+        } // Check next turn's best moves as well and subtract that move's score from this one to find the score to evaluate
+
+        public static Position FindMidpoint(Position hole, Position origin)
+        {
+            int midY = hole.y + (origin.y - hole.y) / 2;
+            int midX = hole.x + (origin.x - hole.x) / 2;
+            return new Position(midY, midX);
+        }
+
+        public static bool ValidMove(Position hole, Position origin)
         {
             bool validoriginY = origin.y < 5 && origin.y > -1;
             bool validoriginX = origin.x < 5 && origin.x > -1;
@@ -211,11 +240,22 @@ namespace Kattis_PegGameForTwo
             else { return true; }
         }
 
-        private static void DoMove(Move bestmove, Player player)
+        public static void DoMove(Move bestmove, Player player)
         {
-            pegs[bestmove.hole.y, bestmove.hole.x] = pegs[bestmove.origin.y, bestmove.origin.x];
-            pegs[bestmove.origin.y, bestmove.origin.x] = 0;
-            player.score = bestmove.Score;
+            if (bestmove.Score != 0)
+            {
+                pegs[bestmove.hole.y, bestmove.hole.x] = pegs[bestmove.origin.y, bestmove.origin.x];
+                pegs[bestmove.origin.y, bestmove.origin.x] = pegs[bestmove.midpoint.y, bestmove.midpoint.x] = 0;
+                player.score = bestmove.Score;
+                UpdateHoleList(); 
+            }
+        }
+
+        private static void UpdateHoleList()
+        {
+            holes.Remove(bestmove.hole);
+            holes.Add(bestmove.midpoint);
+            holes.Add(bestmove.origin);
         }
 
         public static int GetScore(Position midpoint, Position origin)
