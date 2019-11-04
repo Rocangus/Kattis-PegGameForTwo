@@ -80,10 +80,12 @@ namespace Kattis_PegGameForTwo
     public class Program
     {
         static int[,] pegs;
+        static int[,] nextMovePegs;
         static Player jacquez = new Player("Jaquez"), alia = new Player("Alia");
         static Move bestmove;
         static bool gameOver = false;
         static List<Position> holes = new List<Position>();
+        static List<Position> nextMoveHoles;
         static void Main(string[] args)
         {
             pegs = new int[5, 5];
@@ -247,11 +249,27 @@ namespace Kattis_PegGameForTwo
                 pegs[bestmove.hole.y, bestmove.hole.x] = pegs[bestmove.origin.y, bestmove.origin.x];
                 pegs[bestmove.origin.y, bestmove.origin.x] = pegs[bestmove.midpoint.y, bestmove.midpoint.x] = 0;
                 player.score = bestmove.Score;
-                UpdateHoleList(); 
+                UpdateHoleList(holes); 
             }
         }
 
-        private static void UpdateHoleList()
+        public static void PrepareToCheckNextMove(Move bestmove, Player player, List<Position> list)
+        {
+            nextMoveHoles = new List<Position>();
+            foreach (var pos in holes)
+            {
+                nextMoveHoles.Add(pos);
+            }
+            Array.Copy(pegs, nextMovePegs, pegs.Length);
+            if (bestmove.Score != 0)
+            {
+                nextMovePegs[bestmove.hole.y, bestmove.hole.x] = pegs[bestmove.origin.y, bestmove.origin.x];
+                nextMovePegs[bestmove.origin.y, bestmove.origin.x] = pegs[bestmove.midpoint.y, bestmove.midpoint.x] = 0;
+                UpdateHoleList(list);
+            }
+        }
+
+        private static void UpdateHoleList(List<Position> list)
         {
             holes.Remove(bestmove.hole);
             holes.Add(bestmove.midpoint);
