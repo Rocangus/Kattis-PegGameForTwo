@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace Kattis_PegGameForTwo
@@ -36,6 +37,11 @@ namespace Kattis_PegGameForTwo
                 }
                 return score;
             }
+        }
+
+        public static int GetScoreDifference(Move currentMove, Move nextMove)
+        {
+            return currentMove.Score - nextMove.Score;
         }
 
         public override bool Equals(object obj)
@@ -81,11 +87,14 @@ namespace Kattis_PegGameForTwo
     {
         static int[,] pegs;
         static int[,] nextMovePegs;
+        static int bestTurnScoreResult;
         static Player jacquez = new Player("Jaquez"), alia = new Player("Alia");
-        static Move bestmove;
-        static bool gameOver = false;
+        static Move bestMove;
+        static bool gameOver = false, checkingNextMove = false;
         static List<Position> holes = new List<Position>();
-        static List<Position> nextMoveHoles;
+        static List<Position> nextMoveHoles = new List<Position>();
+        private static Move nextBestMove, candidateNextMove;
+
         static void Main(string[] args)
         {
             pegs = new int[5, 5];
@@ -113,14 +122,22 @@ namespace Kattis_PegGameForTwo
 
         public static void TakeTurn(Player player)
         {
-            bestmove = null;
+            bestMove = null;
+            candidateNextMove = null;
             foreach (var hole in holes)
             {
                 CheckForBestMove(hole);
+                PrepareToCheckNextMove(bestMove);
+                checkingNextMove = true;
+                foreach (var nextMoveHole in nextMoveHoles)
+                {
+                    CheckForBestMove(nextMoveHole);
+                    
+                }
             }
-            if (bestmove != null)
+            if (bestMove != null)
             {
-                DoMove(bestmove, player);
+                DoMove(bestMove, player);
             }
             else
             {
@@ -219,10 +236,12 @@ namespace Kattis_PegGameForTwo
         public static void EvaluateScore(Position hole, Position midpoint, Position origin)
         {
             Move candidate = new Move(hole, midpoint, origin);
-            if (candidate.Score > 0 && (bestmove == null || candidate.Score > bestmove.Score))
+            if (candidate.Score > 0 && (candidateNextMove == null || candidate.Score > candidateNextMove.Score))
             {
-                bestmove = candidate;
+                if (!checkingNextMove) { candidateNextMove = candidate; } // How do I keep track of the difference between the best move the next player can possibly take? Am I overcomplicating this?
+                else { nextBestMove = candidate; }
             }
+
         } // Check next turn's best moves as well and subtract that move's score from this one to find the score to evaluate
 
         public static Position FindMidpoint(Position hole, Position origin)
@@ -253,27 +272,24 @@ namespace Kattis_PegGameForTwo
             }
         }
 
-        public static void PrepareToCheckNextMove(Move bestmove, Player player, List<Position> list)
+        public static void PrepareToCheckNextMove(Move bestmove)
         {
-            nextMoveHoles = new List<Position>();
-            foreach (var pos in holes)
-            {
-                nextMoveHoles.Add(pos);
-            }
+            bestTurnScoreResult = 0;
             Array.Copy(pegs, nextMovePegs, pegs.Length);
+            nextMoveHoles = holes.ToList();
             if (bestmove.Score != 0)
             {
                 nextMovePegs[bestmove.hole.y, bestmove.hole.x] = pegs[bestmove.origin.y, bestmove.origin.x];
                 nextMovePegs[bestmove.origin.y, bestmove.origin.x] = pegs[bestmove.midpoint.y, bestmove.midpoint.x] = 0;
-                UpdateHoleList(list);
+                UpdateHoleList(nextMoveHoles);
             }
         }
 
         private static void UpdateHoleList(List<Position> list)
         {
-            holes.Remove(bestmove.hole);
-            holes.Add(bestmove.midpoint);
-            holes.Add(bestmove.origin);
+            holes.Remove(bestMove.hole);
+            holes.Add(bestMove.midpoint);
+            holes.Add(bestMove.origin);
         }
 
         public static int GetScore(Position midpoint, Position origin)
