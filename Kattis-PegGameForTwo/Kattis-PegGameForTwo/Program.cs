@@ -94,6 +94,7 @@ namespace Kattis_PegGameForTwo
         static List<Position> holes = new List<Position>();
         static List<Position> nextMoveHoles = new List<Position>();
         private static Move nextBestMove, candidateNextMove;
+        static Dictionary<Move, List<Move>> possibleMoves;
 
         static void Main(string[] args)
         {
@@ -124,6 +125,7 @@ namespace Kattis_PegGameForTwo
         {
             bestMove = null;
             candidateNextMove = null;
+            possibleMoves = new Dictionary<Move, List<Move>>();
             foreach (var hole in holes)
             {
                 CheckForBestMove(hole);
@@ -239,7 +241,11 @@ namespace Kattis_PegGameForTwo
             if (candidate.Score > 0 && (candidateNextMove == null || candidate.Score > candidateNextMove.Score))
             {
                 if (!checkingNextMove) { candidateNextMove = candidate; } // How do I keep track of the difference between the best move the next player can possibly take? Am I overcomplicating this?
-                else { nextBestMove = candidate; }
+                else 
+                {
+                    if(nextBestMove == null || candidate.Score > nextBestMove.Score)
+                    nextBestMove = candidate; 
+                }
             }
 
         } // Check next turn's best moves as well and subtract that move's score from this one to find the score to evaluate
